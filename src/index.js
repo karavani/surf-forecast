@@ -1,18 +1,18 @@
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import { Provider } from 'react-redux';
-import { createStore, applyMiddleware } from 'redux';
-import thunk from 'redux-thunk';
-import { BrowserRouter } from 'react-router-dom';
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { Provider } from "react-redux";
+import { createStore, applyMiddleware } from "redux";
+import { thunk } from "redux-thunk";
+import { BrowserRouter } from "react-router-dom";
 
-import rootReducer from './reducers';
-import App from './App';
-import './index.css';
-import 'leaflet/dist/leaflet.css';
+import rootReducer from "./reducers";
+import App from "./App";
+import "./index.css";
+import "leaflet/dist/leaflet.css";
 
 const store = createStore(rootReducer, applyMiddleware(thunk));
 
-const container = document.getElementById('root');
+const container = document.getElementById("root");
 const root = createRoot(container);
 
 root.render(
