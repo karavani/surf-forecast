@@ -504,15 +504,10 @@ const mockSpots = [
   },
 ];
 
-export const setSpots = (spots) => ({
+export const setSpots = () => ({
   type: 'SET_SPOTS',
-  payload: spots,
+  payload: mockSpots
 });
-
-export const fetchSpots = () => (dispatch) => {
-  // במקום לבצע קריאת API, נשתמש במידע הסטטי
-  dispatch(setSpots(mockSpots));
-};
 
 export const addReview = (spotId, review) => ({
   type: 'ADD_REVIEW',
