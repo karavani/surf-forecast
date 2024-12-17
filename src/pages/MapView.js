@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { fetchSpots } from "../actions";
+import { setSpots } from '../actions';
 import { Modal, Button } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import SurfForecastTable from "../components/SurfForecastTable";
@@ -60,7 +60,7 @@ const MapView = () => {
   }, []);
 
   useEffect(() => {
-    dispatch(fetchSpots());
+    dispatch(setSpots());
   }, [dispatch]);
 
   useEffect(() => {

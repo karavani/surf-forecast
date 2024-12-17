@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { fetchSpots } from '../actions';
+import { setSpots } from '../actions';
 
 const Home = () => {
   const dispatch = useDispatch();
   const spots = useSelector((state) => state.spots.spots);
 
   useEffect(() => {
-    dispatch(fetchSpots());
+    dispatch(setSpots());
   }, [dispatch]);
 
   return (
