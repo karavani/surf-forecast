@@ -1,8 +1,8 @@
 {
-  "name": "client",
+  "name": "surf-forecast",
   "version": "0.1.0",
-  "homepage": "https://karavani.github.io/surf-forecast",
   "private": true,
+  "homepage": "https://karavani.github.io/surf-forecast/",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.6.0",
     "@testing-library/jest-dom": "^5.17.0",
