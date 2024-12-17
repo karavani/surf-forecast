@@ -7,9 +7,10 @@ import "leaflet/dist/leaflet.css";
 import { fetchSpots } from "../actions";
 import { Modal, Button } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
-import SurfForecastTable from "../components/SurfForecastTable"; // Import the table component
-import "./MapView.css"; // Custom CSS for overlay and other styles"
-import TemperatureIcon from '../components/TemperatureIcon';
+import SurfForecastTable from "../components/SurfForecastTable";
+import "./MapView.css";
+import { Sheet } from 'react-modal-sheet';
+import { useSwipeable } from 'react-swipeable';
 
 // Weather descriptions mapping to Hebrew
 const weatherDescriptions = {
@@ -31,9 +32,9 @@ const translateWeatherDescription = (description) => {
 // Fix Leaflet icon issue
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconUrl: "/leaflet/marker-icon.png",
-  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
-  shadowUrl: "/leaflet/marker-shadow.png",
+  iconUrl: '/surf-forecast/leaflet/marker-icon.png',
+  iconRetinaUrl: '/surf-forecast/leaflet/marker-icon-2x.png',
+  shadowUrl: '/surf-forecast/leaflet/marker-shadow.png',
 });
 
 const FETCH_LENGTH = 50000; // 50 km
@@ -44,7 +45,19 @@ const MapView = () => {
   const [weatherData, setWeatherData] = useState({});
   const [selectedSpot, setSelectedSpot] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const markerRefs = useRef({});
+  const [swipeDirection, setSwipeDirection] = useState(null);
+
+  // האזנה לשינויי גודל מסך
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     dispatch(fetchSpots());
@@ -103,34 +116,98 @@ const MapView = () => {
 
   const getNextSpot = (direction) => {
     if (!selectedSpot) return;
-
-    const currentIndex = spots.findIndex(
-      (spot) => spot._id === selectedSpot._id
-    );
+    const currentIndex = spots.findIndex((spot) => spot._id === selectedSpot._id);
     let newIndex = direction === "next" ? currentIndex + 1 : currentIndex - 1;
-
-    if (newIndex >= spots.length) newIndex = 0; // Wrap around to the start
-    if (newIndex < 0) newIndex = spots.length - 1; // Wrap around to the end
-
-    const newSpot = spots[newIndex];
-    setSelectedSpot(newSpot);
+    if (newIndex >= spots.length) newIndex = 0;
+    if (newIndex < 0) newIndex = spots.length - 1;
+    setSelectedSpot(spots[newIndex]);
   };
 
+  const swipeHandlers = useSwipeable({
+    onSwipedRight: () => {
+      if (isMobile && showModal) {
+        setSwipeDirection('right');
+        getNextSpot("prev");
+        setTimeout(() => setSwipeDirection(null), 300);
+      }
+    },
+    onSwipedLeft: () => {
+      if (isMobile && showModal) {
+        setSwipeDirection('left');
+        getNextSpot("next");
+        setTimeout(() => setSwipeDirection(null), 300);
+      }
+    },
+    preventDefaultTouchmoveEvent: true,
+    trackMouse: false,
+    delta: 50,
+    swipeDuration: 500,
+  });
+
+  const renderContent = () => (
+    <div 
+      {...swipeHandlers} 
+      className={swipeDirection ? `swiping-${swipeDirection}` : ''}
+    >
+      <div className="current-conditions">
+        <h3>תחזית גלים עכשיו</h3>
+        <p>טמפרטורה: {Math.round(weatherData[selectedSpot._id].main.temp - 273.15)}°C</p>
+        <p>מהירות רוח: {weatherData[selectedSpot._id].wind.speed} מ'/ש</p>
+        <p>גובה גלים: {weatherData[selectedSpot._id].waveHeight} מ'</p>
+        <p>מצב: {weatherData[selectedSpot._id].weatherDescription}</p>
+        <p>זריחה: {weatherData[selectedSpot._id].sunrise}</p>
+        <p>שקיעה: {weatherData[selectedSpot._id].sunset}</p>
+      </div>
+      
+      <SurfForecastTable lat={selectedSpot?.lat} lon={selectedSpot?.lon} />
+      
+      <div className="reviews">
+        <h3>ביקורות:</h3>
+        {selectedSpot.reviews.map((review, index) => (
+          <p key={index}>📝 {review.review}</p>
+        ))}
+      </div>
+
+      {isMobile ? (
+        <div className="swipe-navigation">
+          <div className="swipe-arrow left" onClick={() => getNextSpot("prev")}>
+            <span className="arrow">→</span>
+            <span className="text">קודם</span>
+          </div>
+          <div className="swipe-hint">החלק או לחץ</div>
+          <div className="swipe-arrow right" onClick={() => getNextSpot("next")}>
+            <span className="text">הבא</span>
+            <span className="arrow">←</span>
+          </div>
+        </div>
+      ) : (
+        <div className="navigation-buttons">
+          <Button variant="primary" onClick={() => getNextSpot("next")}>
+            הבא ⬅️
+          </Button>
+          <Button variant="secondary" onClick={() => getNextSpot("prev")}>
+            ➡️ קודם
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div style={{ height: "100vh", width: "100vw" }}>
+    <div className="map-container">
       <MapContainer
         center={[32.0853, 34.7818]}
         zoom={8}
         style={{ height: "100vh", width: "100%" }}
         maxBounds={[
-          [29.0, 34.0], // Southwest corner of Israel
-          [33.5, 35.9], // Northeast corner of Israel
+          [29.0, 34.0],
+          [33.5, 35.9],
         ]}
         maxBoundsViscosity={1.0}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap contributors'
+          attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'
         />
         <MapComponent
           spots={spots}
@@ -140,125 +217,55 @@ const MapView = () => {
         />
       </MapContainer>
 
-      <Modal show={showModal} onHide={handleCloseModal} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>{selectedSpot?.name}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedSpot && weatherData[selectedSpot._id] ? (
-            <>
-              <div style={{ padding: "20px 0" }}>
-                <h2>תחזית גלים עכשיו</h2>
-                <h6
-                  style={{
-                    borderBottom: "1px solid rgba(0, 0, 0, 0.125)",
-                    paddingBottom: "5px",
-                  }}
-                >
-                  {new Date().toLocaleString("he-IL")}
-                </h6>
-                <br />
-                <div className="nowForecastDiv">
-                  <p>
-                    טמפרטורה:{" "}
-                    {Math.round(
-                      weatherData[selectedSpot._id].main.temp - 273.15
-                    )}
-                    °C
-                    <TemperatureIcon temperature={weatherData[selectedSpot._id].main.temp - 273.15} />
-                  </p>
-                  <p>
-                    מצב: {weatherData[selectedSpot._id].weatherDescription}
-                    <img
-                      src={`http://openweathermap.org/img/wn/${
-                        weatherData[selectedSpot._id].weather[0].icon
-                      }.png`}
-                      alt={weatherData[selectedSpot._id].weatherDescription}
-                      title={weatherData[selectedSpot._id].weatherDescription}
-                    />
-                  </p>
-                  <p>
-                    מהירות רוח: {weatherData[selectedSpot._id].wind.speed} מ'
-                    לשנייה{" "}
-                    <img
-                      style={{ width: "15px" }}
-                      src={"/././wind-icon.png"}
-                      alt={weatherData[selectedSpot._id].weatherDescription}
-                      title={weatherData[selectedSpot._id].weatherDescription}
-                    />
-                  </p>
-                  <p>
-                    כיוון הרוח: {weatherData[selectedSpot._id].wind.deg}°
-                    <span style={{ marginRight: "8px" }}>
-                      <span
-                        style={{
-                          transform: `rotate(${
-                            weatherData[selectedSpot._id].wind.deg
-                          }deg)`,
-                          position: "absolute",
-                        }}
-                      >
-                        ↑
-                      </span>
-                    </span>
-                  </p>
-                  <p>
-                    גובה הגלים: {weatherData[selectedSpot._id].waveHeight} מ'{" "}
-                    <img
-                      style={{ width: "30px" }}
-                      src={"/././wave-icon.png"}
-                      alt={weatherData[selectedSpot._id].weatherDescription}
-                      title={weatherData[selectedSpot._id].weatherDescription}
-                    />
-                  </p>
+      {!isMobile && (
+        <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>{selectedSpot?.name}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {selectedSpot && weatherData[selectedSpot._id] ? (
+              renderContent()
+            ) : (
+              <p>טוען... ⌛</p>
+            )}
+          </Modal.Body>
+        </Modal>
+      )}
 
-                  <p>
-                    זריחה: {weatherData[selectedSpot._id].sunrise}{" "}
-                    <img
-                      style={{ width: "30px" }}
-                      src={"/././sunrise-icon.png"}
-                      alt={weatherData[selectedSpot._id].weatherDescription}
-                      title={weatherData[selectedSpot._id].weatherDescription}
-                    />
-                  </p>
-                  <p>
-                    שקיעה: {weatherData[selectedSpot._id].sunset}{" "}
-                    <img
-                      style={{ width: "30px" }}
-                      src={"/././moonrise-icon.png"}
-                      alt={weatherData[selectedSpot._id].weatherDescription}
-                      title={weatherData[selectedSpot._id].weatherDescription}
-                    />
-                  </p>
+      {isMobile && (
+        <Sheet
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          snapPoints={[0.9, 0.5]}
+          initialSnap={1}
+        >
+          <Sheet.Container>
+            <Sheet.Header>
+              <div className="sheet-header">
+                <h2>{selectedSpot?.name}</h2>
+                <button 
+                  className="close-button"
+                  onClick={() => setShowModal(false)}
+                >
+                  ✕
+                </button>
+              </div>
+            </Sheet.Header>
+            <Sheet.Content>
+              {selectedSpot && weatherData[selectedSpot._id] ? (
+                <div className="sheet-content">
+                  {renderContent()}
                 </div>
-              </div>
-              <SurfForecastTable
-                lat={selectedSpot?.lat}
-                lon={selectedSpot?.lon}
-              />
-              <div>
-                <h2>ביקורות:</h2>
-                <ul>
-                  {selectedSpot.reviews.map((review, index) => (
-                    <li key={index}>{review.review}</li>
-                  ))}
-                </ul>
-              </div>
-            </>
-          ) : (
-            <p>טוען...</p>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => getNextSpot("prev")}>
-            קודם
-          </Button>
-          <Button variant="primary" onClick={() => getNextSpot("next")}>
-            הבא
-          </Button>
-        </Modal.Footer>
-      </Modal>
-      {showModal && <div className="overlay" />}
+              ) : (
+                <div className="loading-container">
+                  <p>טוען... ⌛</p>
+                </div>
+              )}
+            </Sheet.Content>
+          </Sheet.Container>
+          <Sheet.Backdrop onTap={() => setShowModal(false)} />
+        </Sheet>
+      )}
     </div>
   );
 };

@@ -1,22 +1,547 @@
-.overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-    z-index: 1040; /* Just below the modal's z-index */
-  }
-  .nowForecastDiv p {
-    padding: 20px;
-    margin: 5px;
-    background: aliceblue;
-    width: fit-content;
-    border-radius: 20px;
+.map-container {
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+}
+
+.current-conditions {
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.reviews {
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.modal-header {
+  background: #003366;
+  color: white;
+}
+
+.modal-title {
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .modal {
+    padding: 0 !important;
   }
 
-  .nowForecastDiv{
-    display: flex;
-    flex-wrap: wrap;
+  .modal-dialog {
+    margin: 0;
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out;
   }
-  @import '~@fortawesome/fontawesome-free/css/all.min.css';
+
+  .modal.show .modal-dialog {
+    transform: translateY(0);
+  }
+
+  .modal-content {
+    border-bottom-width: 0;
+    border-radius: 20px 20px 0 0;
+    height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 1050;
+    border-radius: 20px 20px 0 0;
+    padding: 16px;
+  }
+
+  .modal-header::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+  }
+
+  .modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-footer {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+    padding: 16px;
+  }
+
+  .modal-backdrop {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+  }
+
+  .modal-backdrop.show {
+    opacity: 0.5;
+    backdrop-filter: blur(2px);
+  }
+
+  .current-conditions {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 16px;
+  }
+
+  .reviews {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-top: 16px;
+  }
+
+  .modal-footer .btn {
+    flex: 1;
+    border-radius: 25px;
+    padding: 12px;
+  }
+}
+
+@media (min-width: 769px) {
+  .modal-dialog {
+    max-width: 600px;
+  }
+
+  .modal-content {
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .modal-header {
+    border-radius: 15px 15px 0 0;
+  }
+}
+
+/* Sheet Styles - Mobile Only */
+.sheet-header {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #003366;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.sheet-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.sheet-content {
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  padding: 5px;
+  cursor: pointer;
+}
+
+.navigation-buttons {
+  display: flex;
+  justify-content: stretch;
+  padding: 16px;
+  gap: 12px;
+  position: sticky;
+  bottom: 0;
+  background: white;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  margin: auto;
+}
+
+.navigation-buttons button {
+  flex: 1;
+  border-radius: 25px;
+  padding: 12px;
+}
+
+/* תיקונים לתוכן הגליל */
+.current-conditions,
+.reviews,
+.surf-forecast-table {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  padding: 15px;
+}
+
+/* Desktop Modal Styles */
+@media (min-width: 769px) {
+  .modal-dialog {
+    max-width: 600px;
+  }
+
+  .modal-content {
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .modal-header {
+    background: #003366;
+    color: white;
+    border-radius: 15px 15px 0 0;
+  }
+}
+
+/* Mobile Specific Scrolling */
+@media (max-width: 768px) {
+  [data-rsbs-scroll] {
+    height: calc(100vh - 150px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  [data-rsbs-content] {
+    padding-bottom: 80px;
+  }
+}
+
+/* Swipe Indicator Styles */
+.swipe-indicator {
+  padding: 20px 0;
+  margin: 10px 0 30px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.swipe-text {
+  display: flex;
+  justify-content: space-between;
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+}
+
+/* Swipe Animation Arrows */
+.swipe-arrows {
+  position: relative;
+  height: 3px;
+  background: #f0f0f0;
+  margin: 10px 0;
+}
+
+.swipe-arrows::before,
+.swipe-arrows::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40px;
+  height: 3px;
+  background: #4285f4;
+  animation: swipeGuide 2s infinite;
+  opacity: 0;
+}
+
+.swipe-arrows::before {
+  left: 30%;
+  transform: translateX(-50%);
+  animation-delay: 0s;
+}
+
+.swipe-arrows::after {
+  right: 30%;
+  transform: translateX(50%);
+  animation-delay: 1s;
+}
+
+@keyframes swipeGuide {
+  0% {
+    width: 40px;
+    opacity: 0;
+  }
+  20% {
+    width: 40px;
+    opacity: 1;
+  }
+  80% {
+    width: 80px;
+    opacity: 0;
+  }
+  100% {
+    width: 80px;
+    opacity: 0;
+  }
+}
+
+/* Swipe Feedback Animation */
+.swiping-right .sheet-content {
+  animation: swipeRight 0.3s ease-out;
+}
+
+.swiping-left .sheet-content {
+  animation: swipeLeft 0.3s ease-out;
+}
+
+@keyframes swipeRight {
+  0% {
+    transform: translateX(-20px);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes swipeLeft {
+  0% {
+    transform: translateX(20px);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Mobile Specific Touch Handling */
+@media (max-width: 768px) {
+  [data-rsbs-content] {
+    touch-action: pan-y pinch-zoom;
+  }
+  
+  .sheet-content {
+    position: relative;
+    transition: transform 0.2s ease-out;
+  }
+}
+
+/* Swipe Tutorial Styles */
+.swipe-tutorial {
+  padding: 20px;
+  margin: 10px 0;
+  text-align: center;
+  opacity: 0.8;
+}
+
+.swipe-arrows {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 0 20px;
+}
+
+.swipe-arrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.swipe-arrow .arrow {
+  font-size: 1.5rem;
+  animation: pulse 2s infinite;
+}
+
+.swipe-arrow.left .arrow {
+  animation-delay: 0s;
+}
+
+.swipe-arrow.right .arrow {
+  animation-delay: 1s;
+}
+
+.swipe-hint {
+  font-size: 0.9rem;
+  color: #999;
+  margin-top: 5px;
+}
+
+/* Swipe Animation */
+@keyframes pulse {
+  0% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(10px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+}
+
+/* Swipe Feedback Animation */
+.swiping-left {
+  animation: swipeLeft 0.3s ease-out;
+}
+
+.swiping-right {
+  animation: swipeRight 0.3s ease-out;
+}
+
+@keyframes swipeLeft {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-100px);
+    opacity: 0;
+  }
+}
+
+@keyframes swipeRight {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100px);
+    opacity: 0;
+  }
+}
+
+/* Overlay Gradient Hints */
+.sheet-content::before,
+.sheet-content::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 100px;
+  pointer-events: none;
+  opacity: 0.3;
+  transition: opacity 0.3s;
+}
+
+.sheet-content::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(66, 133, 244, 0.2), transparent);
+}
+
+.sheet-content::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(66, 133, 244, 0.2), transparent);
+}
+
+/* Show gradients on hover/touch */
+.sheet-content:hover::before,
+.sheet-content:hover::after {
+  opacity: 0.5;
+}
+
+/* Swipe Navigation Styles */
+.swipe-navigation {
+  position: sticky;
+  bottom: -80px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.swipe-arrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 25px;
+  background: rgba(66, 133, 244, 0.1);
+  color: #4285f4;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.swipe-arrow:active {
+  transform: scale(0.95);
+  background: rgba(66, 133, 244, 0.2);
+}
+
+.swipe-arrow .arrow {
+  font-size: 1.5rem;
+  animation: pulse 2s infinite;
+}
+
+.swipe-arrow.left .arrow {
+  animation-delay: 0s;
+}
+
+.swipe-arrow.right .arrow {
+  animation-delay: 1s;
+}
+
+.swipe-hint {
+  font-size: 0.9rem;
+  color: #666;
+  text-align: center;
+}
+
+/* עדכון אנימציית Pulse */
+@keyframes pulse {
+  0% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateX(5px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+}
+
+/* הסתרת כפתורי ניווט במובייל */
+@media (max-width: 768px) {
+  .navigation-buttons {
+    display: none;
+  }
+
+  .sheet-content {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Desktop Navigation */
+@media (min-width: 769px) {
+  .swipe-navigation {
+    display: none;
+  }
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import "./SurfForecastTable.css"; // Import your CSS file for styling
+import "./SurfForecastTable.css";
+
 const SurfForecastTable = ({ lat, lon }) => {
   const [forecastData, setForecastData] = useState([]);
 
@@ -13,75 +14,77 @@ const SurfForecastTable = ({ lat, lon }) => {
         .then((response) => {
           setForecastData(response.data.list);
         })
-        .catch((error) => console.error("Error fetching weather data:", error));
+        .catch((error) => {
+          console.error("Error fetching weather data:", error);
+          setForecastData([]);
+        });
     }
   }, [lat, lon]);
 
-  const formatTime = (dt) => {
-    const date = new Date(dt * 1000);
-    return `${date.getHours()}:00`;
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleTimeString("he-IL", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
-  const formatDay = (dt) => {
-    const date = new Date(dt * 1000);
-    return date.toLocaleDateString("he-IL", { weekday: "long" });
+  const groupForecastByDay = (data) => {
+    const grouped = {};
+    data.forEach((item) => {
+      const date = new Date(item.dt * 1000).toLocaleDateString("he-IL");
+      if (!grouped[date]) {
+        grouped[date] = [];
+      }
+      grouped[date].push(item);
+    });
+    return grouped;
   };
 
-  // Group data by day
-  const groupedData = forecastData.reduce((acc, forecast) => {
-    const day = formatDay(forecast.dt);
-    if (!acc[day]) acc[day] = [];
-    acc[day].push(forecast);
-    return acc;
-  }, {});
+  const groupedData = groupForecastByDay(forecastData);
 
   return (
     <div className="surf-forecast-container">
-      <h2>תחזית גלים שבועית</h2>
+      <h2>תחזית גלים שבועית 📅</h2>
       {Object.keys(groupedData).length > 0 ? (
-        Object.keys(groupedData).map((day, dayIndex) => (
-          <table key={day} className="forecast-table">
-            <thead>
-              {" "}
-              <h4>{day}</h4>
-             
-              <tr>
-                <th>זמן</th>
-                <th>גלים (מ')</th>
-                <th>רוח</th>
-                <th>מזג אוויר</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groupedData[day].map((forecast, index) => (
-                <tr key={index}>
-                  <td>{formatTime(forecast.dt)}</td>
-                  <td>0-0.3</td> {/* Placeholder value for surf */}
-                  <td>
-                    {forecast.wind.speed} מ'/ש{" "}
-                    <span style={{ marginRight: "8px" }}>
-                    <span
-                      style={{ transform: `rotate(${forecast.wind.deg}deg)`, position: 'absolute' }}
-                      >
-                      ↑
-                    </span>
-                        </span>
-                  </td>
-                  <td>
-                    {forecast.main.temp}°C{" "}
-                    <img
-                      src={`http://openweathermap.org/img/wn/${forecast.weather[0].icon}.png`}
-                      alt={forecast.weather[0].description}
-                      title={forecast.weather[0].description}
-                    />
-                  </td>
+        Object.keys(groupedData).map((day) => (
+          <div key={day} className="forecast-day">
+            <h4>{day}</h4>
+            <table className="forecast-table">
+              <thead>
+                <tr>
+                  <th>⏰ זמן</th>
+                  <th>🌊 גלים</th>
+                  <th>💨 רוח</th>
+                  <th>🌡️ טמפ'</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {groupedData[day].map((forecast, index) => (
+                  <tr key={index}>
+                    <td>{formatTime(forecast.dt)}</td>
+                    <td>0-0.3 מ'</td>
+                    <td>
+                      {forecast.wind.speed} מ'/ש{" "}
+                      <span style={{ display: 'inline-block', transform: `rotate(${forecast.wind.deg}deg)` }}>
+                        ➡️
+                      </span>
+                    </td>
+                    <td>
+                      {Math.round(forecast.main.temp)}°C{" "}
+                      {forecast.weather[0].main === 'Clear' ? '☀️' : 
+                       forecast.weather[0].main === 'Clouds' ? '☁️' :
+                       forecast.weather[0].main === 'Rain' ? '🌧️' : 
+                       forecast.weather[0].main === 'Thunderstorm' ? '⛈️' : '🌤️'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ))
       ) : (
-        <p>טוען נתוני מזג אוויר...</p>
+        <p>טוען נתוני מזג אוויר... ⌛</p>
       )}
     </div>
   );
