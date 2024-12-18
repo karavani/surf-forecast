@@ -2,7 +2,7 @@
   "name": "surf-forecast",
   "version": "0.1.0",
   "private": true,
-  "homepage": ".",
+  "homepage": "https://karavani.github.io/surf-forecast",
   "start_url": ".",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.6.0",
