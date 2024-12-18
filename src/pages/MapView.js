@@ -182,11 +182,11 @@ const MapView = () => {
         </div>
       ) : (
         <div className="navigation-buttons">
-          <Button variant="primary" onClick={() => getNextSpot("next")}>
-            הבא ⬅️
-          </Button>
           <Button variant="secondary" onClick={() => getNextSpot("prev")}>
             ➡️ קודם
+          </Button>
+          <Button variant="primary" onClick={() => getNextSpot("next")}>
+            הבא ⬅️
           </Button>
         </div>
       )}
