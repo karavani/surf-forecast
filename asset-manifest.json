@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/surf-forecast/static/css/main.4cffb160.css",
-    "main.js": "/surf-forecast/static/js/main.3795b213.js",
+    "main.css": "/surf-forecast/static/css/main.cbc02cdf.css",
+    "main.js": "/surf-forecast/static/js/main.f2dad604.js",
     "index.html": "/surf-forecast/index.html",
-    "main.4cffb160.css.map": "/surf-forecast/static/css/main.4cffb160.css.map",
-    "main.3795b213.js.map": "/surf-forecast/static/js/main.3795b213.js.map"
+    "main.cbc02cdf.css.map": "/surf-forecast/static/css/main.cbc02cdf.css.map",
+    "main.f2dad604.js.map": "/surf-forecast/static/js/main.f2dad604.js.map"
   },
   "entrypoints": [
-    "static/css/main.4cffb160.css",
-    "static/js/main.3795b213.js"
+    "static/css/main.cbc02cdf.css",
+    "static/js/main.f2dad604.js"
   ]
 }
