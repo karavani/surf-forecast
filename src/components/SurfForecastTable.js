@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./SurfForecastTable.css";
+import { OPENWEATHER_API_KEY, OPENWEATHER_BASE_URL } from '../config/constants';
 
 const SurfForecastTable = ({ lat, lon }) => {
   const [forecastData, setForecastData] = useState([]);
@@ -9,13 +10,13 @@ const SurfForecastTable = ({ lat, lon }) => {
     if (lat && lon) {
       axios
         .get(
-          `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=0a145abc27717a344615bbbeccfdad8c`
+          `${OPENWEATHER_BASE_URL}/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${OPENWEATHER_API_KEY}`
         )
         .then((response) => {
           setForecastData(response.data.list);
         })
         .catch((error) => {
-          console.error("Error fetching weather data:", error);
+          console.error("שגיאה בטעינת תחזית מזג אוויר:", error);
           setForecastData([]);
         });
     }

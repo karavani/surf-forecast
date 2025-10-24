@@ -11,18 +11,55 @@ import SurfForecastTable from "../components/SurfForecastTable";
 import "./MapView.css";
 import { Sheet } from 'react-modal-sheet';
 import { useSwipeable } from 'react-swipeable';
+import { 
+  OPENWEATHER_API_KEY, 
+  OPENWEATHER_BASE_URL, 
+  FETCH_LENGTH, 
+  SMB_COEFFICIENT,
+  ISRAEL_TIMEZONE,
+  ISRAEL_MAP_CENTER,
+  ISRAEL_MAP_BOUNDS
+} from '../config/constants';
+import { getCacheData, setCacheData } from '../utils/weatherCache';
+import { createCustomMarker, createDefaultMarker, createTooltipContent } from '../utils/mapMarkers';
 
 // Weather descriptions mapping to Hebrew
 const weatherDescriptions = {
   "clear sky": "שמיים בהירים",
   "few clouds": "מעט עננים",
   "scattered clouds": "עננים מפוזרים",
-  "broken clouds": "עננים שבורים",
-  "shower rain": "גשם קל",
+  "broken clouds": "עננות משתנה",
+  "overcast clouds": "מעונן",
+  "shower rain": "ממטרים",
+  "light rain": "גשם קל",
+  "moderate rain": "גשם בינוני",
+  "heavy intensity rain": "גשם כבד",
+  "very heavy rain": "גשם שוטף",
+  "extreme rain": "גשם קיצוני",
   rain: "גשם",
-  thunderstorm: "סערה",
+  "light intensity drizzle": "טפטוף קל",
+  drizzle: "טפטוף",
+  "heavy intensity drizzle": "טפטוף כבד",
+  thunderstorm: "סופת רעמים",
+  "thunderstorm with light rain": "סופת רעמים עם גשם קל",
+  "thunderstorm with rain": "סופת רעמים עם גשם",
+  "thunderstorm with heavy rain": "סופת רעמים עם גשם כבד",
+  "light thunderstorm": "סופת רעמים קלה",
+  "heavy thunderstorm": "סופת רעמים כבדה",
+  "light snow": "שלג קל",
   snow: "שלג",
+  "heavy snow": "שלג כבד",
+  sleet: "גשם מעורב בשלג",
   mist: "ערפל",
+  fog: "ערפל כבד",
+  haze: "אובך",
+  smoke: "עשן",
+  sand: "חול",
+  dust: "אבק",
+  "sand/dust whirls": "מערבולות חול/אבק",
+  tornado: "טורנדו",
+  "volcanic ash": "אפר וולקני",
+  squalls: "משבי רוח",
 };
 
 const translateWeatherDescription = (description) => {
@@ -37,8 +74,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: '/surf-forecast/leaflet/marker-shadow.png',
 });
 
-const FETCH_LENGTH = 50000; // 50 km
-
 const MapView = () => {
   const dispatch = useDispatch();
   const spots = useSelector((state) => state.spots.spots);
@@ -48,6 +83,7 @@ const MapView = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const markerRefs = useRef({});
   const [swipeDirection, setSwipeDirection] = useState(null);
+  const [loadingError, setLoadingError] = useState(false);
 
   // האזנה לשינויי גודל מסך
   useEffect(() => {
@@ -64,46 +100,89 @@ const MapView = () => {
   }, [dispatch]);
 
   useEffect(() => {
+    if (spots.length === 0) return;
+
+    setLoadingError(false);
+    let errorCount = 0;
+
     spots.forEach((spot) => {
+      // בדיקה אם יש נתונים שמורים ב-cache
+      const cachedData = getCacheData(spot._id);
+      if (cachedData) {
+        // שימוש בנתונים מה-cache
+        setWeatherData((prevData) => ({
+          ...prevData,
+          [spot._id]: cachedData,
+        }));
+        return; // דילוג על בקשת API
+      }
+
+
       axios
         .get(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${spot.lat}&lon=${spot.lon}&appid=0a145abc27717a344615bbbeccfdad8c`
+          `${OPENWEATHER_BASE_URL}/weather?lat=${spot.lat}&lon=${spot.lon}&appid=${OPENWEATHER_API_KEY}`
         )
         .then((response) => {
           const windSpeed = response.data.wind.speed; // m/s
+          
+          // תיקון באג קריטי: המרה נכונה מ-Unix timestamp לאובייקט Date
+          // Unix timestamp הוא בשניות, צריך להכפיל ב-1000 (לא 2000!)
           const sunrise = new Date(
-            response.data.sys.sunrise * 2000
+            response.data.sys.sunrise * 1000
           ).toLocaleTimeString("he-IL", {
-            timeZone: "UTC",
+            timeZone: ISRAEL_TIMEZONE, // שימוש באזור הזמן הנכון של ישראל
             hour: "2-digit",
             minute: "2-digit",
           });
           const sunset = new Date(
-            response.data.sys.sunset * 2190
+            response.data.sys.sunset * 1000
           ).toLocaleTimeString("he-IL", {
-            timeZone: "UTC",
+            timeZone: ISRAEL_TIMEZONE, // שימוש באזור הזמן הנכון של ישראל
             hour: "2-digit",
             minute: "2-digit",
           });
 
           // Calculate wave height using SMB formula
+          // נוסחת SMB משוערכת: גובה גל = (מקדם * מהירות רוח²) / (מרחק אפקטיבי^⅓)
           const waveHeight =
-            (0.21 * (windSpeed * windSpeed)) / Math.pow(FETCH_LENGTH, 1 / 3);
+            (SMB_COEFFICIENT * (windSpeed * windSpeed)) / Math.pow(FETCH_LENGTH, 1 / 3);
+
+          const weatherDataItem = {
+            ...response.data,
+            waveHeight: waveHeight.toFixed(2), // Format wave height to 2 decimal places
+            weatherDescription: translateWeatherDescription(
+              response.data.weather[0].description
+            ), // Translate weather description
+            sunrise: sunrise,
+            sunset: sunset,
+          };
+
+          // שמירת הנתונים ב-cache
+          setCacheData(spot._id, weatherDataItem);
 
           setWeatherData((prevData) => ({
             ...prevData,
-            [spot._id]: {
-              ...response.data,
-              waveHeight: waveHeight.toFixed(2), // Format wave height to 2 decimal places
-              weatherDescription: translateWeatherDescription(
-                response.data.weather[0].description
-              ), // Translate weather description
-              sunrise: sunrise,
-              sunset: sunset,
-            },
+            [spot._id]: weatherDataItem,
           }));
         })
-        .catch((error) => console.error("Error fetching weather data:", error));
+        .catch((error) => {
+          console.error(`שגיאה בטעינת נתוני מזג אוויר עבור ${spot.name}:`, error);
+          errorCount++;
+          
+          // אם יותר מ-70% מהבקשות נכשלו, הצג הודעת שגיאה כללית
+          if (errorCount > spots.length * 0.7) {
+            setLoadingError(true);
+          }
+
+          // הוסף placeholder לנתוני שגיאה כדי שהמשתמש יידע שיש בעיה
+          setWeatherData((prevData) => ({
+            ...prevData,
+            [spot._id]: {
+              error: true,
+              message: "לא ניתן לטעון נתונים"
+            },
+          }));
+        });
     });
   }, [spots]);
 
@@ -111,8 +190,6 @@ const MapView = () => {
     setSelectedSpot(spot);
     setShowModal(true);
   };
-
-  const handleCloseModal = () => setShowModal(false);
 
   const getNextSpot = (direction) => {
     if (!selectedSpot) return;
@@ -144,20 +221,73 @@ const MapView = () => {
     swipeDuration: 500,
   });
 
-  const renderContent = () => (
-    <div 
-      {...swipeHandlers} 
-      className={swipeDirection ? `swiping-${swipeDirection}` : ''}
-    >
-      <div className="current-conditions">
-        <h3>תחזית גלים עכשיו</h3>
-        <p>טמפרטורה: {Math.round(weatherData[selectedSpot._id].main.temp - 273.15)}°C</p>
-        <p>מהירות רוח: {weatherData[selectedSpot._id].wind.speed} מ'/ש</p>
-        <p>גובה גלים: {weatherData[selectedSpot._id].waveHeight} מ'</p>
-        <p>מצב: {weatherData[selectedSpot._id].weatherDescription}</p>
-        <p>זריחה: {weatherData[selectedSpot._id].sunrise}</p>
-        <p>שקיעה: {weatherData[selectedSpot._id].sunset}</p>
-      </div>
+  const renderContent = () => {
+    // בדיקה אם יש שגיאה בטעינת הנתונים
+    if (weatherData[selectedSpot._id]?.error) {
+      return (
+        <div className="error-container">
+          <div className="error-icon">⚠️</div>
+          <h3>אופס! משהו השתבש</h3>
+          <p>לא הצלחנו לטעון את נתוני מזג האוויר עבור {selectedSpot.name}</p>
+          <p className="error-hint">אנא בדוק את החיבור לאינטרנט ונסה שוב</p>
+          <button 
+            className="retry-button"
+            onClick={() => window.location.reload()}
+          >
+            נסה שוב 🔄
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div 
+        {...swipeHandlers} 
+        className={swipeDirection ? `swiping-${swipeDirection}` : ''}
+      >
+        {/* Wave Height Hero Card */}
+        <div className="wave-height-card">
+          <div className="wave-height-main">
+            {weatherData[selectedSpot._id].waveHeight} מ'
+          </div>
+          <div className="wave-quality-badge">
+            {weatherData[selectedSpot._id].waveHeight >= 2 ? 'FAIR TO GOOD' : 
+             weatherData[selectedSpot._id].waveHeight >= 1 ? 'POOR TO FAIR' : 'FLAT'}
+          </div>
+        </div>
+
+        {/* Weather Grid */}
+        <div className="weather-grid">
+          <div className="weather-item">
+            <div className="weather-item-icon">💨</div>
+            <div className="weather-item-label">רוח</div>
+            <div className="weather-item-value">{weatherData[selectedSpot._id].wind.speed} מ'/ש</div>
+          </div>
+          
+          <div className="weather-item">
+            <div className="weather-item-icon">🌡️</div>
+            <div className="weather-item-label">טמפרטורה</div>
+            <div className="weather-item-value">{Math.round(weatherData[selectedSpot._id].main.temp - 273.15)}°C</div>
+          </div>
+          
+          <div className="weather-item">
+            <div className="weather-item-icon">🌅</div>
+            <div className="weather-item-label">זריחה</div>
+            <div className="weather-item-value">{weatherData[selectedSpot._id].sunrise}</div>
+          </div>
+          
+          <div className="weather-item">
+            <div className="weather-item-icon">🌇</div>
+            <div className="weather-item-label">שקיעה</div>
+            <div className="weather-item-value">{weatherData[selectedSpot._id].sunset}</div>
+          </div>
+        </div>
+
+        {/* Weather Description */}
+        <div className="current-conditions">
+          <h3>מצב מזג האוויר</h3>
+          <p>{weatherData[selectedSpot._id].weatherDescription}</p>
+        </div>
       
       <SurfForecastTable lat={selectedSpot?.lat} lon={selectedSpot?.lon} />
       
@@ -191,18 +321,43 @@ const MapView = () => {
         </div>
       )}
     </div>
-  );
+    );
+  };
 
   return (
     <div className="map-container">
+      {/* App Header */}
+      <div className="app-header">
+        <div className="app-logo">
+          <span className="app-logo-icon">🏄‍♂️</span>
+          <div>
+            <div className="app-title">Surf IL</div>
+            <div className="app-subtitle">תחזית גלים בזמן אמת</div>
+          </div>
+        </div>
+        <div className="header-actions">
+          <button className="header-button" title="רענן נתונים" onClick={() => window.location.reload()}>
+            🔄
+          </button>
+        </div>
+      </div>
+
+      {loadingError && (
+        <div className="global-error-banner">
+          ⚠️ בעיה בטעינת נתוני מזג אוויר. בדוק את החיבור לאינטרנט ורענן את הדף.
+          <button 
+            className="close-banner"
+            onClick={() => setLoadingError(false)}
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <MapContainer
-        center={[32.0853, 34.7818]}
+        center={ISRAEL_MAP_CENTER}
         zoom={8}
         style={{ height: "100vh", width: "100%" }}
-        maxBounds={[
-          [29.0, 34.0],
-          [33.5, 35.9],
-        ]}
+        maxBounds={ISRAEL_MAP_BOUNDS}
         maxBoundsViscosity={1.0}
       >
         <TileLayer
@@ -214,6 +369,7 @@ const MapView = () => {
           selectedSpot={selectedSpot}
           handleMarkerClick={handleMarkerClick}
           markerRefs={markerRefs}
+          weatherData={weatherData}
         />
       </MapContainer>
 
@@ -276,6 +432,7 @@ const MapComponent = ({
   selectedSpot,
   handleMarkerClick,
   markerRefs,
+  weatherData,
 }) => {
   const map = useMap();
 
@@ -291,34 +448,109 @@ const MapComponent = ({
 
   return (
     <>
-      {spots.map((spot) => (
-        <Marker
-          key={spot._id}
-          position={[spot.lat, spot.lon]}
-          onClick={() => {
-            handleMarkerClick(spot);
-            map.flyTo([spot.lat, spot.lon], 12);
-          }}
-          ref={(el) => {
-            markerRefs.current[spot._id] = el;
-          }}
-        >
-          <Popup>
-            <div>
-              <h3>{spot.name}</h3>
-              <p
-                style={{ cursor: "pointer" }}
-                onClick={() => {
-                  handleMarkerClick(spot);
-                  map.flyTo([spot.lat, spot.lon], 12);
-                }}
-              >
-                לחץ לפרטים נוספים
-              </p>
-            </div>
-          </Popup>
-        </Marker>
-      ))}
+      {spots.map((spot) => {
+        // קבלת נתוני מזג אוויר עבור הנקודה
+        const spotWeather = weatherData[spot._id];
+        const waveHeight = spotWeather?.waveHeight ? parseFloat(spotWeather.waveHeight) : 0;
+        const windSpeed = spotWeather?.wind?.speed || 0;
+        
+        // יצירת marker מותאם או ברירת מחדל
+        const customIcon = spotWeather?.waveHeight 
+          ? createCustomMarker(waveHeight)
+          : createDefaultMarker();
+
+        // קביעת class לאיכות (לאנימציית pulse)
+        const qualityClass = waveHeight >= 2.5 ? 'marker-quality-epic' :
+                            waveHeight >= 1.5 ? 'marker-quality-good' : '';
+
+        return (
+          <Marker
+            key={spot._id}
+            position={[spot.lat, spot.lon]}
+            icon={customIcon}
+            onClick={() => {
+              handleMarkerClick(spot);
+              map.flyTo([spot.lat, spot.lon], 12);
+            }}
+            ref={(el) => {
+              markerRefs.current[spot._id] = el;
+              // הוספת class לאיכות
+              if (el && qualityClass) {
+                setTimeout(() => {
+                  const markerElement = el._icon;
+                  if (markerElement) {
+                    markerElement.classList.add(qualityClass);
+                  }
+                }, 100);
+              }
+            }}
+            eventHandlers={{
+              mouseover: (e) => {
+                // הצגת tooltip עם מידע מהיר
+                if (spotWeather?.waveHeight) {
+                  const quality = waveHeight >= 2.5 ? 'EPIC' :
+                                 waveHeight >= 1.5 ? 'GOOD' :
+                                 waveHeight >= 0.8 ? 'FAIR' :
+                                 waveHeight >= 0.3 ? 'POOR' : 'FLAT';
+                  
+                  e.target.bindTooltip(
+                    createTooltipContent(spot.name, waveHeight, windSpeed, quality),
+                    {
+                      permanent: false,
+                      direction: 'top',
+                      className: 'custom-tooltip'
+                    }
+                  ).openTooltip();
+                }
+              },
+              mouseout: (e) => {
+                e.target.closeTooltip();
+              }
+            }}
+          >
+            <Popup>
+              <div style={{ padding: '12px' }}>
+                <h3 style={{ 
+                  margin: '0 0 8px 0', 
+                  fontSize: '1.1rem',
+                  color: '#1A1A1A',
+                  fontWeight: '700'
+                }}>
+                  {spot.name}
+                </h3>
+                {spotWeather?.waveHeight && (
+                  <div style={{ 
+                    fontSize: '0.9rem',
+                    color: '#5F6368',
+                    marginBottom: '8px'
+                  }}>
+                    🌊 {waveHeight} מ' | 💨 {windSpeed} מ'/ש
+                  </div>
+                )}
+                <button
+                  style={{
+                    background: 'linear-gradient(135deg, #2B7A78 0%, #3AAFA9 100%)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    width: '100%',
+                    fontSize: '0.9rem'
+                  }}
+                  onClick={() => {
+                    handleMarkerClick(spot);
+                    map.flyTo([spot.lat, spot.lon], 12);
+                  }}
+                >
+                  לחץ לפרטים מלאים 🏄‍♂️
+                </button>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
     </>
   );
 };

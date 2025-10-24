@@ -1,42 +1,236 @@
+/* ==================== SURFLINE FORECAST TABLE ==================== */
+
 .surf-forecast-container {
-    padding: 20px 0;
-  }
-  
-  .forecast-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-    font-size: 0.9em;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-  
-  .forecast-table thead tr {
-    background-color: #009879;
-    color: #ffffff;
-    text-align: left;
-  }
-  
+  padding: 0;
+  margin: 20px 0;
+}
+
+.surf-forecast-container h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+}
+
+.forecast-day {
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 200ms ease;
+}
+
+.forecast-day:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.forecast-day h4 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid #3AAFA9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.forecast-day h4::before {
+  content: '📅';
+  font-size: 1.25rem;
+}
+
+/* Table styling */
+.forecast-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.forecast-table thead tr {
+  background: linear-gradient(135deg, #2B7A78 0%, #3AAFA9 100%);
+  color: #FFFFFF;
+}
+
+.forecast-table th {
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+}
+
+.forecast-table thead tr th:first-child {
+  border-top-right-radius: 12px;
+}
+
+.forecast-table thead tr th:last-child {
+  border-top-left-radius: 12px;
+}
+
+.forecast-table tbody tr {
+  background: #F5F9FA;
+  transition: all 200ms ease;
+}
+
+.forecast-table tbody tr:hover {
+  background: #E8F4F3;
+  transform: scale(1.01);
+  box-shadow: 0 2px 8px rgba(43, 122, 120, 0.15);
+}
+
+.forecast-table td {
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #1A1A1A;
+  border: none;
+}
+
+.forecast-table tbody tr td:first-child {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  font-weight: 700;
+  color: #2B7A78;
+}
+
+.forecast-table tbody tr td:last-child {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+/* Wave height cell */
+.forecast-table td:nth-child(2) {
+  font-weight: 700;
+  color: #3AAFA9;
+  font-size: 1.125rem;
+}
+
+/* Wind speed with icon */
+.forecast-table td:nth-child(3) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Temperature cell */
+.forecast-table td:nth-child(4) {
+  font-weight: 700;
+}
+
+/* Weather icons styling */
+.forecast-table td img {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+}
+
+/* Wind direction arrow */
+.wind-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #2B7A78 0%, #3AAFA9 100%);
+  border-radius: 50%;
+  color: white;
+  font-size: 1rem;
+  transition: all 200ms ease;
+}
+
+.forecast-table tbody tr:hover .wind-arrow {
+  transform: scale(1.15) rotate(5deg);
+}
+
+/* Loading state */
+.forecast-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #5F6368;
+  font-size: 1rem;
+}
+
+.forecast-loading::after {
+  content: '⌛';
+  display: block;
+  font-size: 3rem;
+  margin-top: 16px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Empty state */
+.forecast-empty {
+  text-align: center;
+  padding: 40px 20px;
+  background: #F5F9FA;
+  border-radius: 16px;
+  color: #5F6368;
+}
+
+.forecast-empty::before {
+  content: '🌊';
+  display: block;
+  font-size: 4rem;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
   .forecast-table th,
   .forecast-table td {
-    padding: 12px 15px;
-    text-align: center;
+    padding: 12px 8px;
+    font-size: 0.875rem;
   }
-  
-  .forecast-table tbody tr {
-    border-bottom: 1px solid #dddddd;
+
+  .forecast-table th {
+    font-size: 0.75rem;
   }
-  
-  .forecast-table tbody tr:nth-of-type(even) {
-    background-color: #f3f3f3;
+
+  .forecast-day {
+    padding: 16px;
   }
-  
-  .forecast-table tbody tr:last-of-type {
-    border-bottom: 2px solid #009879;
+
+  .forecast-day h4 {
+    font-size: 1rem;
   }
-  
-  .forecast-table td img {
-    width: 20px;
-    height: 20px;
-    vertical-align: middle;
-  }
-  
+}
+
+/* Quality indicators */
+.quality-excellent {
+  color: #00C853;
+  font-weight: 700;
+}
+
+.quality-good {
+  color: #64DD17;
+  font-weight: 700;
+}
+
+.quality-fair {
+  color: #FFD600;
+  font-weight: 700;
+}
+
+.quality-poor {
+  color: #FF6D00;
+  font-weight: 700;
+}

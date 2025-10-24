@@ -1,3 +1,11 @@
+/* ==================== GLOBAL STYLES - Surfline Inspired ==================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -7,30 +15,109 @@ body {
   -moz-osx-font-smoothing: grayscale;
   direction: rtl;
   text-align: right;
+  background: #F5F9FA;
+  color: #1A1A1A;
+  line-height: 1.6;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
 * {
   direction: rtl;
   text-align: right;
 }
 
-.modal-body{
-  max-height: 500px;
-  overflow-y: auto;
-}
-.modal-dialog{
-  max-width: 80%;
-}
-.modal-header .btn-close{
-  margin: 5px;
-  position: unset !important;
+/* ==================== TYPOGRAPHY ==================== */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0;
 }
 
-.modal-header{
+h1 { font-size: 2.25rem; }
+h2 { font-size: 1.875rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.125rem; }
+h6 { font-size: 1rem; }
+
+p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ==================== MODAL OVERRIDES ==================== */
+
+.modal-content {
+  border-radius: 20px;
+  border: none;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modal-body {
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.modal-dialog {
+  max-width: 80%;
+}
+
+.modal-header {
   flex-direction: row;
   justify-content: space-between;
+  border-bottom: 1px solid #E8EAED;
+  padding: 20px 24px;
+}
+
+.modal-header .btn-close {
+  margin: 5px;
+  position: unset !important;
+  opacity: 0.6;
+  transition: opacity 200ms ease;
+}
+
+.modal-header .btn-close:hover {
+  opacity: 1;
+}
+
+/* ==================== SCROLLBAR ==================== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F9FA;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #BDC1C6;
+  border-radius: 10px;
+  transition: background 200ms ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9AA0A6;
+}
+
+/* ==================== UTILITIES ==================== */
+
+.text-primary {
+  color: #1A1A1A;
+}
+
+.text-secondary {
+  color: #5F6368;
+}
+
+.text-light {
+  color: #9AA0A6;
 }
